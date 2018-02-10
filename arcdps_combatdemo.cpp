@@ -167,6 +167,9 @@ uintptr_t mod_wnd(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 /* combat callback -- may be called asynchronously. return ignored */
 /* one participant will be party/squad, or minion of. no spawn statechange events. despawn statechange only on marked boss npcs */
 uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname) {
+
+	if(!show_log) return;
+
 	/* big buffer */
 	char buff[4096];
 	char* p = &buff[0];
