@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <Windows.h>
 #include <string>
+#include <sstream>
 #include "imgui.h"
 #include "imgui_panels.h"
 
@@ -81,6 +82,7 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname);
 uintptr_t mod_imgui();
 uintptr_t mod_options();
 
+std::stringstream print_buffer;
 bool show_log;
 
 /* dll main -- winapi */
@@ -128,7 +130,7 @@ arcdps_exports* mod_init()
 	p += _snprintf(p, 400, "arcdps: %s\n", arcvers);
 
 	/* print */
-	AddLog(buff);
+	print_buffer << buff;
 
 	/* for arcdps */
 	arc_exports.size = sizeof(arcdps_exports);
@@ -158,7 +160,7 @@ uintptr_t mod_wnd(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	p += _snprintf(p, 400, "umsg %u, wparam %lld, lparam %lld\n", uMsg, wParam, lParam);
 
 	/* print */
-	//print_buffer += buff;
+	//print_buffer << buff;
 	return uMsg;
 }
 
@@ -267,19 +269,27 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname) {
 
 	/* print */
 
-	AddLog(buff);
+	print_buffer << buff;
 	return 0;
 }
 
-void ShowMechanicsLog(bool* p_open)
+void ShowCombatLog(bool* p_open)
 {
+    static AppLog log;
 
-    if(show_log) Draw("COMBAT LOG", p_open);
+    if(print_buffer.str().size() > 0)
+    {
+        log.AddLog(print_buffer.str().c_str());
+        print_buffer.clear();
+        print_buffer.str(std::string());
+    }
+
+    if(show_log) log.Draw("COMBAT LOG", p_open);
 }
 
 uintptr_t mod_imgui()
 {
-    ShowMechanicsLog(&show_log);
+    ShowCombatLog(&show_log);
 
     return 0;
 }

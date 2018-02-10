@@ -4,19 +4,13 @@
 //  static ExampleAppLog my_log;
 //  my_log.AddLog("Hello %d world\n", 123);
 //  my_log.Draw("title");
-
-ImGuiTextBuffer     Buf;
-ImGuiTextFilter     Filter;
-ImVector<int>       LineOffsets;        // Index to lines offset
-bool                ScrollToBottom;
-
-void    Clear()
+void    AppLog::Clear()
 {
     Buf.clear();
     LineOffsets.clear();
 }
 
-void    AddLog(const char* fmt, ...) IM_PRINTFARGS(2)
+void    AppLog::AddLog(const char* fmt, ...) IM_PRINTFARGS(2)
 {
     int old_size = Buf.size();
     va_list args;
@@ -29,7 +23,7 @@ void    AddLog(const char* fmt, ...) IM_PRINTFARGS(2)
     ScrollToBottom = true;
 }
 
-void    Draw(const char* title, bool* p_open = NULL)
+void    AppLog::Draw(const char* title, bool* p_open = NULL)
 {
     ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiSetCond_FirstUseEver);
     ImGui::Begin(title, p_open, ImGuiWindowFlags_NoCollapse);

@@ -67,19 +67,20 @@
 	<string.h>
 	<memory.h>
 
-1518251550 source:e:\my documents\guild wars 2\arcdps extended combat log\arcdps extended combat log\imgui_panels.cpp
+1518253478 source:e:\my documents\guild wars 2\arcdps extended combat log\arcdps extended combat log\imgui_panels.cpp
 	"imgui_panels.h"
 
-1518251541 e:\my documents\guild wars 2\arcdps extended combat log\arcdps extended combat log\imgui_panels.h
+1518253685 e:\my documents\guild wars 2\arcdps extended combat log\arcdps extended combat log\imgui_panels.h
 	"imgui.h"
 
 1446667730 source:e:\my documents\guild wars 2\arcdps extended combat log\arcdps extended combat log\main.cpp
 
-1518251249 source:e:\my documents\guild wars 2\arcdps extended combat log\arcdps extended combat log\arcdps_combatdemo.cpp
+1518254454 source:e:\my documents\guild wars 2\arcdps extended combat log\arcdps extended combat log\arcdps_combatdemo.cpp
 	<stdint.h>
 	<stdio.h>
 	<Windows.h>
 	<string>
+	<sstream>
 	"imgui.h"
 	"imgui_panels.h"
 
