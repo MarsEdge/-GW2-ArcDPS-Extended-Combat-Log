@@ -282,9 +282,12 @@ void ShowCombatLog(bool* p_open)
 {
     static AppLog log;
 
+    const char* tmp;
+
     if(print_buffer.str().size() > 0)
     {
-        log.AddLog(print_buffer.str().c_str());
+        tmp = print_buffer.str().c_str();
+        log.AddLog(tmp);
         print_buffer.clear();
         print_buffer.str(std::string());
     }
