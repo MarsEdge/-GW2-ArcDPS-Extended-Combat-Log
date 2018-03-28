@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <Windows.h>
 #include <string>
-#include <sstream>
 #include "imgui.h"
 #include "imgui_panels.h"
 
@@ -82,8 +81,17 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname);
 uintptr_t mod_imgui();
 uintptr_t mod_options();
 
-std::stringstream print_buffer;
-bool show_log;
+std::string print_buffer;
+
+bool show_log = false;
+bool show_tracking_change = true;
+bool show_target_change = true;
+bool show_state_change = true;
+bool show_activation = true;
+bool show_buffremove = true;
+bool show_buff = true;
+bool show_physical = true;
+bool involves_self = true;
 
 /* dll main -- winapi */
 BOOL APIENTRY DllMain(HANDLE hModule, DWORD ulReasonForCall, LPVOID lpReserved) {
@@ -130,7 +138,7 @@ arcdps_exports* mod_init()
 	p += _snprintf(p, 400, "arcdps: %s\n", arcvers);
 
 	/* print */
-	print_buffer << buff;
+	print_buffer += buff;
 
 	/* for arcdps */
 	arc_exports.size = sizeof(arcdps_exports);
@@ -160,7 +168,7 @@ uintptr_t mod_wnd(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	p += _snprintf(p, 400, "umsg %u, wparam %lld, lparam %lld\n", uMsg, wParam, lParam);
 
 	/* print */
-	//print_buffer << buff;
+	//print_buffer += buff;
 	return uMsg;
 }
 
@@ -180,7 +188,7 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname) {
 
 		/* notify tracking change */
 		if (!src->elite) {
-
+            if(!show_tracking_change) return;
 			/* add */
 			if (src->prof) {
 				p += _snprintf(p, 400, "==== cbtnotify ====\n");
@@ -197,6 +205,7 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname) {
 
 		/* notify target change */
 		else if (src->elite == 1) {
+            if(!show_target_change) return;
 			p += _snprintf(p, 400, "==== cbtnotify ====\n");
 			p += _snprintf(p, 400, "new target: %llx\n", src->id);
 		}
@@ -204,6 +213,14 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname) {
 
 	/* combat event. skillname may be null. non-null skillname will remain static until module is unloaded. refer to evtc notes for complete detail */
 	else {
+
+        if (ev->is_statechange && !show_state_change) return;
+        if (ev->is_activation && !show_activation) return;
+        if (ev->is_buffremove && !show_buffremove) return;
+        if (ev->buff && !show_buff) return;
+        if (!ev->is_statechange && !ev->is_activation && !ev->is_buffremove && !ev->buff && !show_physical) return;
+        if (!(src && src->self || dst && dst->self) && involves_self) return;
+
 
 		/* default names */
 		if (!src->name || !strlen(src->name)) src->name = "(area)";
@@ -274,7 +291,7 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname) {
 
 	/* print */
 
-	print_buffer << buff;
+	print_buffer += buff;
 	return 0;
 }
 
@@ -282,14 +299,10 @@ void ShowCombatLog(bool* p_open)
 {
     static AppLog log;
 
-    const char* tmp;
-
-    if(print_buffer.str().size() > 0)
+    if(print_buffer.size() > 0)
     {
-        tmp = print_buffer.str().c_str();
-        log.AddLog(tmp);
-        print_buffer.clear();
-        print_buffer.str(std::string());
+        log.AddLog(print_buffer.c_str());
+        print_buffer = "";
     }
 
     if(show_log) log.Draw("COMBAT LOG", p_open);
@@ -304,7 +317,25 @@ uintptr_t mod_imgui()
 
 uintptr_t mod_options()
 {
-    ImGui::Checkbox("COMBAT LOG", &show_log);
+    bool expand = false;
+
+    expand = ImGui::TreeNode("COMBAT LOG");
+
+    if(expand)
+    {
+        ImGui::Checkbox("SHOW", &show_log);
+
+        ImGui::Checkbox("show_tracking_change" , &show_tracking_change);
+        ImGui::Checkbox("show_target_change" , &show_target_change);
+        ImGui::Checkbox("show_state_change" , &show_state_change);
+        ImGui::Checkbox("show_activation" , &show_activation);
+        ImGui::Checkbox("show_buffremove" , &show_buffremove);
+        ImGui::Checkbox("show_buff" , &show_buff);
+        ImGui::Checkbox("show_physical" , &show_physical);
+        ImGui::Checkbox("involves_self" , &involves_self);
+
+        ImGui::TreePop();
+    }
 
     return 0;
 }
