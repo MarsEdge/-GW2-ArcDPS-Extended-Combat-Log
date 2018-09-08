@@ -112,7 +112,7 @@ uintptr_t mod_wnd(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	char* p = &buff[0];
 
 	/* common */
-	p += _snprintf(p, 400, "==== wndproc %llx ====\n", hWnd);
+	p += _snprintf(p, 400, "==== wndproc %llx ====\n", (uint64_t)hWnd);
 	p += _snprintf(p, 400, "umsg %u, wparam %lld, lparam %lld\n", uMsg, wParam, lParam);
 
 	/* print */
