@@ -315,7 +315,30 @@ uintptr_t mod_options()
         ImGui::Checkbox("show_target_change" , &show_target_change);
         
 		ImGui::Checkbox("show_state_change" , &show_state_change);
-		ImGui::InputInt("state filter", &statechange_filter,1,1);
+		ImGui::Combo("state filter", &statechange_filter,
+			"NONE\0"
+			"ENTERCOMBAT\0"
+			"EXITCOMBAT\0"
+			"CHANGEUP\0"
+			"CHANGEDEAD\0"
+			"CHANGEDOWN\0"
+			"SPAWN\0"
+			"DESPAWN\0"
+			"HEALTHUPDATE\0"
+			"LOGSTART\0"
+			"LOGEND\0"
+			"WEAPSWAP\0"
+			"MAXHEALTHUPDATE\0"
+			"POINTOFVIEW\0"
+			"LANGUAGE\0"
+			"GWBUILD\0"
+			"SHARDID\0"
+			"REWARD\0"
+			"BUFFINITIAL\0"
+			"POSITION\0"
+			"VELOCITY\0"
+			"FACING\0"
+			"TEAMCHANGE\0\0",22);//TODO: generate this
 
         ImGui::Checkbox("show_activation" , &show_activation);
 		ImGui::InputInt("activ filter", &activation_filter, 1, 1);
