@@ -34,11 +34,16 @@ bool show_console = false;
 bool show_tracking_change = true;
 bool show_target_change = true;
 bool show_state_change = true;
+int statechange_filter = 0;
 bool show_activation = true;
+int activation_filter = 0;
 bool show_buffremove = true;
+int buffremove_filter = 0;
 bool show_buff = true;
+int buff_filter = 0;
 bool show_physical = true;
 bool involves_self = true;
+ImGuiTextFilter skillname_filter;
 
 /* dll main -- winapi */
 BOOL APIENTRY DllMain(HANDLE hModule, DWORD ulReasonForCall, LPVOID lpReserved) {
@@ -169,6 +174,15 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname, uint64_t i
         if (ev->buff && !show_buff) return 0;
         if (!ev->is_statechange && !ev->is_activation && !ev->is_buffremove && !ev->buff && !show_physical) return 0;
         if (!(src && src->self || dst && dst->self) && involves_self) return 0;
+		
+		if (skillname_filter.IsActive())
+		{
+			if (!skillname) return 0;
+			else
+			{
+				if (!skillname_filter.PassFilter(skillname)) return 0;
+			}
+		}
 
 
 		/* default names */
@@ -183,11 +197,13 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname, uint64_t i
 
 		/* statechange */
 		if (ev->is_statechange) {
+			if (statechange_filter && statechange_filter != ev->is_statechange) return 0;
 			p += _snprintf(p, 400, "is_statechange: %u\n", ev->is_statechange);
 		}
 
 		/* activation */
 		else if (ev->is_activation) {
+			if (activation_filter && activation_filter != ev->is_activation) return 0;
 			p += _snprintf(p, 400, "is_activation: %u\n", ev->is_activation);
 			p += _snprintf(p, 400, "skill: %s:%u\n", skillname, ev->skillid);
 			p += _snprintf(p, 400, "ms_expected: %d\n", ev->value);
@@ -195,6 +211,8 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname, uint64_t i
 
 		/* buff remove */
 		else if (ev->is_buffremove) {
+			if (buffremove_filter && buffremove_filter != ev->is_buffremove) return 0;
+			if (buff_filter && buff_filter != ev->skillid) return 0;
 			p += _snprintf(p, 400, "is_buffremove: %u\n", ev->is_buffremove);
 			p += _snprintf(p, 400, "skill: %s:%u\n", skillname, ev->skillid);
 			p += _snprintf(p, 400, "ms_duration: %d\n", ev->value);
@@ -203,7 +221,7 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname, uint64_t i
 
 		/* buff */
 		else if (ev->buff) {
-
+			if (buff_filter && buff_filter != ev->skillid) return 0;
 			/* damage */
 			if (ev->buff_dmg) {
 				p += _snprintf(p, 400, "is_buff: %u\n", ev->buff);
@@ -295,12 +313,23 @@ uintptr_t mod_options()
 
         ImGui::Checkbox("show_tracking_change" , &show_tracking_change);
         ImGui::Checkbox("show_target_change" , &show_target_change);
-        ImGui::Checkbox("show_state_change" , &show_state_change);
+        
+		ImGui::Checkbox("show_state_change" , &show_state_change);
+		ImGui::InputInt("state filter", &statechange_filter,1,1);
+
         ImGui::Checkbox("show_activation" , &show_activation);
+		ImGui::InputInt("activ filter", &activation_filter, 1, 1);
+
         ImGui::Checkbox("show_buffremove" , &show_buffremove);
+		ImGui::InputInt("buffrm filter", &buffremove_filter, 1, 1);
+
         ImGui::Checkbox("show_buff" , &show_buff);
+		ImGui::InputInt("buff filter", &buff_filter, 1, 1);
+
         ImGui::Checkbox("show_physical" , &show_physical);
         ImGui::Checkbox("involves_self" , &involves_self);
+
+		skillname_filter.Draw("skillname filter");
 
         ImGui::TreePop();
     }
