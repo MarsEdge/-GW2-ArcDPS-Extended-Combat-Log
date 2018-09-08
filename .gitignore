@@ -2,3 +2,5 @@
 /bin
 /*.layout
 /*.depend
+/.vs
+/x64

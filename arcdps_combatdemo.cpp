@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <Windows.h>
 #include <string>
+#include <mutex>
 #include "imgui.h"
 #include "imgui_panels.h"
 
@@ -15,10 +16,11 @@ typedef struct arcdps_exports {
 	uintptr_t sig; /* pick a non-zero number that isn't used by other modules */
 	char* out_name; /* name string */
 	char* out_build; /* build string */
-	void* wnd; /* wndproc callback, fn(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) */
+	void* wnd_nofilter; /* wndproc callback, fn(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) */
 	void* combat; /* combat event callback, fn(cbtevent* ev, ag* src, ag* dst, char* skillname) */
 	void* imgui; /* id3dd9::present callback, before imgui::render, fn() */
 	void* options; /* id3dd9::present callback, appending to the end of options window in arcdps, fn() */
+	void* combat_local;  /* combat event callback like area but from chat log, fn(cbtevent* ev, ag* src, ag* dst, char* skillname, uint64_t id, uint64_t revision) */
 } arcdps_exports;
 
 /* combat event */
@@ -53,7 +55,7 @@ typedef struct cbtevent {
 	uint8_t is_statechange; /* from cbtstatechange enum */
 	uint8_t is_flanking; /* target agent was not facing source */
 	uint8_t is_shields; /* all or partial damage was vs barrier/shield */
-	uint8_t pad63; /* internal tracking. garbage */
+	uint8_t is_offcycle; /* zero if buff dmg happened during tick, non-zero otherwise */
 	uint8_t pad64; /* internal tracking. garbage */
 } cbtevent;
 
@@ -81,9 +83,11 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname);
 uintptr_t mod_imgui();
 uintptr_t mod_options();
 
+std::mutex print_buffer_mtx;
 std::string print_buffer;
 
 bool show_log = false;
+bool show_console = false;
 bool show_tracking_change = true;
 bool show_target_change = true;
 bool show_state_change = true;
@@ -141,11 +145,12 @@ arcdps_exports* mod_init()
 	print_buffer += buff;
 
 	/* for arcdps */
+	memset(&arc_exports, 0, sizeof(arcdps_exports));
+	arc_exports.sig = 0x48306396;//from random.org
 	arc_exports.size = sizeof(arcdps_exports);
 	arc_exports.out_name = "combatlog";
 	arc_exports.out_build = "0.1";
-	arc_exports.sig = 0x48306396;//from random.org
-	arc_exports.wnd = mod_wnd;
+	arc_exports.wnd_nofilter = mod_wnd;
 	arc_exports.combat = mod_combat;
 	arc_exports.imgui = mod_imgui;
 	arc_exports.options = mod_options;
@@ -176,7 +181,7 @@ uintptr_t mod_wnd(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 /* one participant will be party/squad, or minion of. no spawn statechange events. despawn statechange only on marked boss npcs */
 uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname) {
 
-	if(!show_log) return;
+	if(!show_log && !show_console) return 0;
 
 	/* big buffer */
 	char buff[4096];
@@ -188,7 +193,7 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname) {
 
 		/* notify tracking change */
 		if (!src->elite) {
-            if(!show_tracking_change) return;
+            if(!show_tracking_change) return 0;
 			/* add */
 			if (src->prof) {
 				p += _snprintf(p, 400, "==== cbtnotify ====\n");
@@ -205,7 +210,7 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname) {
 
 		/* notify target change */
 		else if (src->elite == 1) {
-            if(!show_target_change) return;
+            if(!show_target_change) return 0;
 			p += _snprintf(p, 400, "==== cbtnotify ====\n");
 			p += _snprintf(p, 400, "new target: %llx\n", src->id);
 		}
@@ -214,12 +219,12 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname) {
 	/* combat event. skillname may be null. non-null skillname will remain static until module is unloaded. refer to evtc notes for complete detail */
 	else {
 
-        if (ev->is_statechange && !show_state_change) return;
-        if (ev->is_activation && !show_activation) return;
-        if (ev->is_buffremove && !show_buffremove) return;
-        if (ev->buff && !show_buff) return;
-        if (!ev->is_statechange && !ev->is_activation && !ev->is_buffremove && !ev->buff && !show_physical) return;
-        if (!(src && src->self || dst && dst->self) && involves_self) return;
+        if (ev->is_statechange && !show_state_change) return 0;
+        if (ev->is_activation && !show_activation) return 0;
+        if (ev->is_buffremove && !show_buffremove) return 0;
+        if (ev->buff && !show_buff) return 0;
+        if (!ev->is_statechange && !ev->is_activation && !ev->is_buffremove && !ev->buff && !show_physical) return 0;
+        if (!(src && src->self || dst && dst->self) && involves_self) return 0;
 
 
 		/* default names */
@@ -291,6 +296,7 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname) {
 
 	/* print */
 
+	std::lock_guard<std::mutex> lock(print_buffer_mtx);
 	print_buffer += buff;
 	return 0;
 }
@@ -298,9 +304,16 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname) {
 void ShowCombatLog(bool* p_open)
 {
     static AppLog log;
-
+	
+	std::lock_guard<std::mutex> lock(print_buffer_mtx);
     if(print_buffer.size() > 0)
     {
+		if (show_console)
+		{
+			DWORD written = 0;
+			HANDLE hnd = GetStdHandle(STD_OUTPUT_HANDLE);
+			WriteConsoleA(hnd, print_buffer.c_str(), print_buffer.size(), &written, 0);
+		}
         log.AddLog(print_buffer.c_str());
         print_buffer = "";
     }
@@ -323,7 +336,18 @@ uintptr_t mod_options()
 
     if(expand)
     {
-        ImGui::Checkbox("SHOW", &show_log);
+        ImGui::Checkbox("SHOW PANEL", &show_log);
+		if (ImGui::Checkbox("SHOW CONSOLE", &show_console))
+		{
+			if (show_console)
+			{
+				AllocConsole();
+			}
+			else
+			{
+				FreeConsole();
+			}
+		}
 
         ImGui::Checkbox("show_tracking_change" , &show_tracking_change);
         ImGui::Checkbox("show_target_change" , &show_target_change);
