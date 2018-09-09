@@ -317,10 +317,10 @@ uintptr_t mod_options()
 			}
 		}
 
-        ImGui::Checkbox("show_tracking_change" , &show_tracking_change);
-        ImGui::Checkbox("show_target_change" , &show_target_change);
+        ImGui::Checkbox("show tracking change" , &show_tracking_change);
+        ImGui::Checkbox("show target change" , &show_target_change);
         
-		ImGui::Checkbox("show_state_change" , &show_state_change);
+		ImGui::Checkbox("show state change" , &show_state_change);
 		ImGui::Combo("state filter", &statechange_filter,
 			"NONE\0"
 			"ENTERCOMBAT\0"
@@ -346,7 +346,7 @@ uintptr_t mod_options()
 			"FACING\0"
 			"TEAMCHANGE\0\0",22);//TODO: generate this
 
-        ImGui::Checkbox("show_activation" , &show_activation);
+        ImGui::Checkbox("show activation" , &show_activation);
 		ImGui::Combo("activ filter", &activation_filter,
 			"ACTV_NONE\0"
 			"ACTV_NORMAL\0"
@@ -355,18 +355,18 @@ uintptr_t mod_options()
 			"ACTV_CANCEL_CANCEL\0"
 			"ACTV_RESET\0\0", 5);
 
-        ImGui::Checkbox("show_buffremove" , &show_buffremove);
+        ImGui::Checkbox("show buffremove" , &show_buffremove);
 		ImGui::Combo("buffrm filter", &buffremove_filter,
 			"CBTB_NONE\0"
 			"CBTB_ALL\0"
 			"CBTB_SINGLE\0"
 			"CBTB_MANUAL\0\0",3);
 
-        ImGui::Checkbox("show_buff" , &show_buff);
+        ImGui::Checkbox("show buff" , &show_buff);
 		ImGui::InputInt("buff filter", &buff_filter, 1, 1);
 
-        ImGui::Checkbox("show_physical" , &show_physical);
-        ImGui::Checkbox("involves_self" , &involves_self);
+        ImGui::Checkbox("show physical" , &show_physical);
+        ImGui::Checkbox("involves self" , &involves_self);
 
         ImGui::Checkbox("current target is src" , &target_is_src);
         ImGui::Checkbox("current target is dst" , &target_is_dst);
