@@ -28,6 +28,7 @@ uintptr_t mod_options();
 
 std::mutex print_buffer_mtx;
 std::string print_buffer;
+uintptr_t current_target = 0;
 
 bool show_log = false;
 bool show_console = false;
@@ -43,6 +44,8 @@ bool show_buff = true;
 int buff_filter = 0;
 bool show_physical = true;
 bool involves_self = true;
+bool target_is_src = false;
+bool target_is_dst = false;
 ImGuiTextFilter skillname_filter;
 
 /* dll main -- winapi */
@@ -161,6 +164,7 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname, uint64_t i
 				if (!show_target_change) return 0;
 				p += _snprintf(p, 400, "==== cbtnotify ====\n");
 				p += _snprintf(p, 400, "new target: %llx\n", src->id);
+				current_target = src->id;
 			}
 		}
 	}
@@ -174,6 +178,8 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname, uint64_t i
         if (ev->buff && !show_buff) return 0;
         if (!ev->is_statechange && !ev->is_activation && !ev->is_buffremove && !ev->buff && !show_physical) return 0;
         if (!(src && src->self || dst && dst->self) && involves_self) return 0;
+		if (target_is_src && src && src->id != current_target) return 0;
+		if (target_is_dst && dst && dst->id != current_target) return 0;
 		
 		if (skillname_filter.IsActive())
 		{
@@ -341,16 +347,29 @@ uintptr_t mod_options()
 			"TEAMCHANGE\0\0",22);//TODO: generate this
 
         ImGui::Checkbox("show_activation" , &show_activation);
-		ImGui::InputInt("activ filter", &activation_filter, 1, 1);
+		ImGui::Combo("activ filter", &activation_filter,
+			"ACTV_NONE\0"
+			"ACTV_NORMAL\0"
+			"ACTV_QUICKNESS\0"
+			"ACTV_CANCEL_FIRE\0"
+			"ACTV_CANCEL_CANCEL\0"
+			"ACTV_RESET\0\0", 5);
 
         ImGui::Checkbox("show_buffremove" , &show_buffremove);
-		ImGui::InputInt("buffrm filter", &buffremove_filter, 1, 1);
+		ImGui::Combo("buffrm filter", &buffremove_filter,
+			"CBTB_NONE\0"
+			"CBTB_ALL\0"
+			"CBTB_SINGLE\0"
+			"CBTB_MANUAL\0\0",3);
 
         ImGui::Checkbox("show_buff" , &show_buff);
 		ImGui::InputInt("buff filter", &buff_filter, 1, 1);
 
         ImGui::Checkbox("show_physical" , &show_physical);
         ImGui::Checkbox("involves_self" , &involves_self);
+
+        ImGui::Checkbox("current target is src" , &target_is_src);
+        ImGui::Checkbox("current target is dst" , &target_is_dst);
 
 		skillname_filter.Draw("skillname filter");
 
