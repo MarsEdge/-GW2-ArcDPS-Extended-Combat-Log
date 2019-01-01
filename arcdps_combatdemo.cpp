@@ -148,8 +148,7 @@ uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, char* skillname, uint64_t i
 				/* add */
 				if (src->prof) {
 					p += _snprintf(p, 400, "==== cbtnotify ====\n");
-					// self flag disabled - always 1
-					p += _snprintf(p, 400, "agent added: %s:%s (%0llx), prof: %u, elite: %u, self: %u\n", src->name, dst->name, src->id, dst->prof, dst->elite, dst->self);
+					p += _snprintf(p, 400, "agent added: %s:%s (%0llx), instid: %u, prof: %u, elite: %u, self: %u, team: %u, subgroup: %u\n", src->name, dst->name, src->id, dst->id, dst->prof, dst->elite, dst->self, src->team, dst->team);
 				}
 
 				/* remove */
@@ -286,7 +285,7 @@ void ShowCombatLog(bool* p_open)
         print_buffer = "";
     }
 
-    if(show_log) log.Draw("COMBAT LOG", p_open);
+    if(show_log) log.Draw("Combat Log", p_open);
 }
 
 uintptr_t mod_imgui()
@@ -298,11 +297,7 @@ uintptr_t mod_imgui()
 
 uintptr_t mod_options()
 {
-    bool expand = false;
-
-    expand = ImGui::TreeNode("COMBAT LOG");
-
-    if(expand)
+    if(ImGui::BeginMenu("Combat Log"))
     {
         ImGui::Checkbox("SHOW PANEL", &show_log);
 		if (ImGui::Checkbox("SHOW CONSOLE", &show_console))
@@ -344,7 +339,12 @@ uintptr_t mod_options()
 			"POSITION\0"
 			"VELOCITY\0"
 			"FACING\0"
-			"TEAMCHANGE\0\0",22);//TODO: generate this
+			"TEAMCHANGE\0"
+			"ATTACKTARGET\0"
+			"TARGETABLE\0"
+			"MAPID\0"
+			"REPLINFO\0"
+			"STACKACTIVE\0",27);//TODO: generate this
 
         ImGui::Checkbox("show activation" , &show_activation);
 		ImGui::Combo("activ filter", &activation_filter,
@@ -373,7 +373,7 @@ uintptr_t mod_options()
 
 		skillname_filter.Draw("skillname filter");
 
-        ImGui::TreePop();
+        ImGui::EndMenu();
     }
 
     return 0;
