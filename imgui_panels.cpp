@@ -27,6 +27,7 @@ void    AppLog::Draw(const char* title, bool* p_open = NULL)
 {
     ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiSetCond_FirstUseEver);
     ImGui::Begin(title, p_open, ImGuiWindowFlags_NoCollapse);
+	ImGui::PushAllowKeyboardFocus(false);
     if (ImGui::Button("Clear")) Clear();
     ImGui::SameLine();
     bool copy = ImGui::Button("Copy");
@@ -57,5 +58,6 @@ void    AppLog::Draw(const char* title, bool* p_open = NULL)
         ImGui::SetScrollHere(1.0f);
     ScrollToBottom = false;
     ImGui::EndChild();
+	ImGui::PopAllowKeyboardFocus();
     ImGui::End();
 }
